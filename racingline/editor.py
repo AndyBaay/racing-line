@@ -1,17 +1,20 @@
-import pygame, copy
+import copy
+import json
+import random
 from datetime import datetime
-import random,json
+
+import pygame
 
 # Settings
-GRID_SQUARE_SIZE=16
-WINDOW_WIDTH=550
-WINDOW_HEIGHT=300
+GRID_SQUARE_SIZE = 16
+WINDOW_WIDTH = 550
+WINDOW_HEIGHT = 300
 
 # Color Constants
-RED = (200,0,0)
+RED = (200, 0, 0)
 WHITE = (255, 255, 255)
-LIGHT_GREEN = (0, 204, 0) 
-DARK_GREEN = (0, 153, 0) 
+LIGHT_GREEN = (0, 204, 0)
+DARK_GREEN = (0, 153, 0)
 LIGHT_BLUE = (102, 178, 255)
 LIGHT_GRAY = (224, 224, 224)
 GRAY = (192, 192, 192)
@@ -20,29 +23,25 @@ BLACK = (0, 0, 0)
 TRACK_COLOR = (0, 0, 0)
 TRACK_COLOR_2 = (192, 192, 192)
 
-# Initialize pygame
-pygame.init()
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
-clock = pygame.time.Clock()
-# defining a font
-smallfont = pygame.font.SysFont('Corbel',35)
+buffer = []
+drawn_lines = []
+
 
 def draw_grid(width, surface):
     space_between_lines = GRID_SQUARE_SIZE
-    for i in range(int(0+(GRID_SQUARE_SIZE/2)), width, space_between_lines):
+    for i in range(int(0 + (GRID_SQUARE_SIZE / 2)), width, space_between_lines):
         x, y = i, i
         pygame.draw.line(surface, LIGHT_GREEN, (x, 0), (x, width))
         pygame.draw.line(surface, LIGHT_GREEN, (0, y), (width, y))
 
-buffer = []
-drawn_lines = []
+
 def save_track(screen):
     if len(drawn_lines) < 2:
-        print('Error saving track. 2 lines are required (outer and inner boundaries)')
+        print("Error saving track. 2 lines are required (outer and inner boundaries)")
         return
     x, y = screen.get_size()
     track_definition = {
-        "track_dimensions": [x, y], 
+        "track_dimensions": [x, y],
         "track_background_color": list(LIGHT_GREEN),
         "outer_track_limits": drawn_lines[0],
         "inner_track_limits": drawn_lines[1],
@@ -63,12 +62,11 @@ class Cursor:
         column_num = x // GRID_SQUARE_SIZE
         row_num = y // GRID_SQUARE_SIZE
         self.cx, self.cy = column_num * GRID_SQUARE_SIZE, row_num * GRID_SQUARE_SIZE
-        center_x = column_num * GRID_SQUARE_SIZE + int(GRID_SQUARE_SIZE/2)
-        center_y = row_num * GRID_SQUARE_SIZE  + int(GRID_SQUARE_SIZE/2)
+        center_x = column_num * GRID_SQUARE_SIZE + int(GRID_SQUARE_SIZE / 2)
+        center_y = row_num * GRID_SQUARE_SIZE + int(GRID_SQUARE_SIZE / 2)
 
         self.center = (center_x, center_y)
-        self.clicked = clicked 
-
+        self.clicked = clicked
 
     def draw(self, surface):
         global buffer
@@ -86,14 +84,25 @@ class Cursor:
                 if buffer[0] == buffer[-1]:
                     drawn_lines.append(copy.deepcopy(buffer))
                     buffer = []
-        pygame.draw.circle(screen, WHITE, (self.center[0], self.center[1]), 4)
-        #pygame.draw.rect(surface, (255, 255, 255), self.square)
+        pygame.draw.circle(surface, WHITE, (self.center[0], self.center[1]), 4)
+        # pygame.draw.rect(surface, (255, 255, 255), self.square)
+
 
 class SaveButton:
-    def __init__(self, pos, width, height, text_color=BLACK, default_color=WHITE, hover_color=LIGHT_GRAY, pressed_color=LIGHT_BLUE):
+    def __init__(
+        self,
+        pos,
+        width,
+        height,
+        text_color=BLACK,
+        default_color=WHITE,
+        hover_color=LIGHT_GRAY,
+        pressed_color=LIGHT_BLUE,
+    ):
+        smallfont = pygame.font.SysFont("Corbel", 35)
         self.rect = pygame.Rect(pos[0], pos[1], width, height)
-        self.text = smallfont.render(' save' , True , text_color)
-        self.state = "" # hover, pressed, or empty string
+        self.text = smallfont.render(" save", True, text_color)
+        self.state = ""  # hover, pressed, or empty string
         self.last_click = datetime(1, 1, 1)
         self.default_color = default_color
         self.hover_color = hover_color
@@ -107,7 +116,6 @@ class SaveButton:
             return True
         else:
             return False
-        
 
     def update(self, mouse_pos):
         if self.rect.collidepoint(mouse_pos):
@@ -128,55 +136,68 @@ class SaveButton:
         screen.blit(self.text, self.rect)
 
 
-cursor = Cursor()
-save_button = SaveButton((40, 10), 70, 24)
+def start_editor():
+    # Initialize pygame
+    pygame.init()
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
+    clock = pygame.time.Clock()
+    # defining a font
+    # smallfont = pygame.font.SysFont("Corbel", 35)
+    cursor = Cursor()
+    save_button = SaveButton((40, 10), 70, 24)
+    global buffer
 
-run = True
-while run:
-    clock.tick(60)
-    screen.fill(DARK_GREEN)
-    mouse_pressed = False
+    run = True
+    while run:
+        clock.tick(60)
+        screen.fill(DARK_GREEN)
+        mouse_pressed = False
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # checks if mouse position is over the button
-            captured_click = save_button.check_for_click(event.pos, screen)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # checks if mouse position is over the button
+                captured_click = save_button.check_for_click(event.pos, screen)
 
-            # if we didn't handle the click, pass it on
-            mouse_pressed = not captured_click
-        
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                buffer = []
-            if event.key == pygame.K_BACKSPACE and len(buffer) >= 1:
-                buffer.pop()
+                # if we didn't handle the click, pass it on
+                mouse_pressed = not captured_click
 
-    mouse_pos = pygame.mouse.get_pos()
-    
-    cursor.update(mouse_pressed)
-    save_button.update(mouse_pos)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    buffer = []
+                if event.key == pygame.K_BACKSPACE and len(buffer) >= 1:
+                    buffer.pop()
 
-    draw_grid(screen.get_width(), screen)
-    # Draw current line
-    if len(buffer) == 1:
-        # Add the first point
-        pygame.draw.circle(screen, TRACK_COLOR, buffer[0], 1)
-    if len(buffer) > 1:
-        # Draw line segment
-        pygame.draw.lines(screen, TRACK_COLOR, False, buffer, width=2)
-    
-    # Draw the guide-line segment
-    if len(buffer) >= 1:
-        pygame.draw.lines(screen, TRACK_COLOR, False, [buffer[-1], (cursor.center[0], cursor.center[1])], width=2)
+        mouse_pos = pygame.mouse.get_pos()
 
-    # Draw previously saved lines
-    for line in drawn_lines:
-        pygame.draw.lines(screen, TRACK_COLOR_2, False, line, width=2)
+        cursor.update(mouse_pressed)
+        save_button.update(mouse_pos)
 
+        draw_grid(screen.get_width(), screen)
+        # Draw current line
+        if len(buffer) == 1:
+            # Add the first point
+            pygame.draw.circle(screen, TRACK_COLOR, buffer[0], 1)
+        if len(buffer) > 1:
+            # Draw line segment
+            pygame.draw.lines(screen, TRACK_COLOR, False, buffer, width=2)
 
-    cursor.draw(screen)
-    save_button.draw(screen)
-    pygame.display.flip()
+        # Draw the guide-line segment
+        if len(buffer) >= 1:
+            pygame.draw.lines(
+                screen,
+                TRACK_COLOR,
+                False,
+                [buffer[-1], (cursor.center[0], cursor.center[1])],
+                width=2,
+            )
+
+        # Draw previously saved lines
+        for line in drawn_lines:
+            pygame.draw.lines(screen, TRACK_COLOR_2, False, line, width=2)
+
+        cursor.draw(screen)
+        save_button.draw(screen)
+        pygame.display.flip()

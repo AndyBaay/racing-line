@@ -11,7 +11,7 @@ That should setup your python environment. Confirm it is working by running `pyt
 
 From the root directory run:
 ```bash
-python racingline/editor.py
+python main.py build-track
 ```
 This will bring up a pygame window where you can draw points to create a track.
 
@@ -26,3 +26,4 @@ provide the name in the console.
 
 - https://dspace.mit.edu/bitstream/handle/1721.1/64669/706825301-MIT.pdf
 - https://math.stackexchange.com/questions/289575/car-racing-how-to-calculate-the-radius-of-the-racing-line-through-a-turn-of-var
+- https://ora.ox.ac.uk/objects/uuid:ce1a7106-0a2c-41af-8449-41541220809f/download_file?safe_filename=Perantoni%2Band%2BLimebeer%2C%2BOptimal%2Bcontrol%2Bfor%2Ba%2BFormula%2BOne%2Bcar%2Bwith%2Bvariable%2Bparameters.pdf&file_format=application%2Fpdf&type_of_work=Journal+article
