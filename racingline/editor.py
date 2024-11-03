@@ -37,15 +37,14 @@ def draw_grid(width, surface):
 buffer = []
 drawn_lines = []
 def save_track(screen):
-    if len(drawn_lines) < 2:
-        print('Error saving track. 2 lines are required (outer and inner boundaries)')
+    if len(drawn_lines) < 1:
+        print('Error saving track - finished line is required to save.')
         return
     x, y = screen.get_size()
     track_definition = {
         "track_dimensions": [x, y], 
         "track_background_color": list(LIGHT_GREEN),
-        "outer_track_limits": drawn_lines[0],
-        "inner_track_limits": drawn_lines[1],
+        "center_line": drawn_lines[0],
     }
     output_file_name = "track_" + str(random.randrange(0, 10000)).zfill(5) + ".json"
     out_file = open(output_file_name, "a")
@@ -166,15 +165,17 @@ while run:
         pygame.draw.circle(screen, TRACK_COLOR, buffer[0], 1)
     if len(buffer) > 1:
         # Draw line segment
-        pygame.draw.lines(screen, TRACK_COLOR, False, buffer, width=2)
+        pygame.draw.lines(screen, TRACK_COLOR, False, buffer, width=20)
+        pygame.draw.lines(screen, LIGHT_BLUE, False, buffer, width=2)
     
     # Draw the guide-line segment
     if len(buffer) >= 1:
-        pygame.draw.lines(screen, TRACK_COLOR, False, [buffer[-1], (cursor.center[0], cursor.center[1])], width=2)
+        pygame.draw.lines(screen, TRACK_COLOR, False, [buffer[-1], (cursor.center[0], cursor.center[1])], width=20)
+        pygame.draw.lines(screen, LIGHT_BLUE, False, [buffer[-1], (cursor.center[0], cursor.center[1])], width=2)
 
     # Draw previously saved lines
     for line in drawn_lines:
-        pygame.draw.lines(screen, TRACK_COLOR_2, False, line, width=2)
+        pygame.draw.lines(screen, TRACK_COLOR_2, False, line, width=20)
 
 
     cursor.draw(screen)
