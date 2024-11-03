@@ -5,9 +5,13 @@ import sys
 
 import pygame
 
-from racingline.editor import GRAY, RED, WHITE, start_editor
-
-# from racingline.editor import calc_normal_line, upsample_line
+from racingline.editor import start_editor
+from racingline.lib.color import DARK_GRAY, RED, WHITE
+from racingline.lib.line_generator import (
+    calc_normal_line,
+    points_to_angle,
+    upsample_line,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,9 +33,9 @@ def run_track():
     finish_line = track_definition["finish_line"]
     outer_track_limits = track_definition["outer_track_limits"]
     inner_track_limits = track_definition["inner_track_limits"]
-    TRACK_COLOR = GRAY
-    # exit()
-    # inner_track_limits = upsample_line(inner_track_limits)
+    TRACK_COLOR = DARK_GRAY
+    points_to_angle(*inner_track_limits[:3])
+    inner_track_limits = upsample_line(inner_track_limits)
 
     ### Initialized Pygame ###
     pygame.init()

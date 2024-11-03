@@ -36,15 +36,18 @@ def draw_grid(width, surface):
 
 
 def save_track(screen):
+    # TODO: I think this was meant to be changed to a centerline definition where
+    # the boundaries are calculated as offsets from the centerline
     if len(drawn_lines) < 2:
         print("Error saving track. 2 lines are required (outer and inner boundaries)")
+        # if len(drawn_lines) < 1:
+        #     print('Error saving track - finished line is required to save.')
         return
     x, y = screen.get_size()
     track_definition = {
         "track_dimensions": [x, y],
         "track_background_color": list(LIGHT_GREEN),
-        "outer_track_limits": drawn_lines[0],
-        "inner_track_limits": drawn_lines[1],
+        "center_line": drawn_lines[0],
     }
     output_file_name = "track_" + str(random.randrange(0, 10000)).zfill(5) + ".json"
     out_file = open(output_file_name, "a")
@@ -99,6 +102,7 @@ class SaveButton:
         hover_color=LIGHT_GRAY,
         pressed_color=LIGHT_BLUE,
     ):
+        # defining a font
         smallfont = pygame.font.SysFont("Corbel", 35)
         self.rect = pygame.Rect(pos[0], pos[1], width, height)
         self.text = smallfont.render(" save", True, text_color)
@@ -141,8 +145,6 @@ def start_editor():
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
     clock = pygame.time.Clock()
-    # defining a font
-    # smallfont = pygame.font.SysFont("Corbel", 35)
     cursor = Cursor()
     save_button = SaveButton((40, 10), 70, 24)
     global buffer
@@ -182,13 +184,21 @@ def start_editor():
             pygame.draw.circle(screen, TRACK_COLOR, buffer[0], 1)
         if len(buffer) > 1:
             # Draw line segment
-            pygame.draw.lines(screen, TRACK_COLOR, False, buffer, width=2)
+            pygame.draw.lines(screen, TRACK_COLOR, False, buffer, width=20)
+            pygame.draw.lines(screen, LIGHT_BLUE, False, buffer, width=2)
 
         # Draw the guide-line segment
         if len(buffer) >= 1:
             pygame.draw.lines(
                 screen,
                 TRACK_COLOR,
+                False,
+                [buffer[-1], (cursor.center[0], cursor.center[1])],
+                width=20,
+            )
+            pygame.draw.lines(
+                screen,
+                LIGHT_BLUE,
                 False,
                 [buffer[-1], (cursor.center[0], cursor.center[1])],
                 width=2,
