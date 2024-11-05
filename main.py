@@ -6,12 +6,15 @@ import sys
 import pygame
 
 from racingline.editor import start_editor
-from racingline.lib.color import DARK_GRAY, RED, WHITE
+from racingline.lib.color import DARK_GRAY, LIGHT_BLUE, RED, WHITE
 from racingline.lib.line_generator import (
     calc_normal_line,
+    get_midpoint,
+    line_intersection,
     points_to_angle,
     upsample_line,
 )
+from racingline.start import start
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +38,33 @@ def run_track():
     inner_track_limits = track_definition["inner_track_limits"]
     TRACK_COLOR = DARK_GRAY
     points_to_angle(*inner_track_limits[:3])
+
+    ### TESTING ###
+    print(inner_track_limits)
     inner_track_limits = upsample_line(inner_track_limits)
+    print(inner_track_limits)
+    outer_track_limits = upsample_line(outer_track_limits)
+    centerline = []
+    last_outer_point_index = 0
+
+    for index in range(0, len(inner_track_limits) - 1):
+        second_index = (index + 1) % (len(inner_track_limits) - 1)
+        # Create a normal line from the inner track
+        normal_line = calc_normal_line(
+            inner_track_limits[index], inner_track_limits[second_index]
+        )
+        # Find it's intersection with the outer track and trim
+        for index in range(0, len(outer_track_limits) - 1):
+            # Rememeber where we last found an intersection and start there for the next segement of inner track
+            index = (index + last_outer_point_index) % (len(outer_track_limits) - 1)
+
+            if intersect := line_intersection(
+                normal_line, [outer_track_limits[index], outer_track_limits[index + 1]]
+            ):
+                last_outer_point_index = index
+                centerline.append(get_midpoint(normal_line[0], intersect))
+                break
+    ### END TESTING ###
 
     ### Initialized Pygame ###
     pygame.init()
@@ -52,6 +81,7 @@ def run_track():
 
         pygame.draw.polygon(screen, TRACK_COLOR, outer_track_limits)
         pygame.draw.polygon(screen, background_color, inner_track_limits)
+        pygame.draw.polygon(screen, LIGHT_BLUE, centerline, 1)
         pygame.draw.line(screen, WHITE, finish_line[0], finish_line[1], 3)
 
         for point in outer_track_limits + inner_track_limits:
@@ -62,7 +92,7 @@ def run_track():
             normal_line = calc_normal_line(
                 inner_track_limits[index], inner_track_limits[second_index]
             )
-            pygame.draw.line(screen, RED, normal_line[0], normal_line[1], 1)
+            # pygame.draw.line(screen, RED, normal_line[0], normal_line[1], 1)
 
         pygame.display.flip()
 
@@ -73,10 +103,18 @@ def build_track():
     pass
 
 
+def test_interpolation():
+    print("Testing interpolation")
+
+
 def main():
     # Instantiate the parser
     parser = argparse.ArgumentParser(description="Racing Line Calculation")
     sub = parser.add_subparsers(dest="command", help="sub-command help")
+
+    # Build a track
+    parser_auth = sub.add_parser("start")
+    parser_auth.set_defaults(func=start)
 
     # Build a track
     parser_auth = sub.add_parser("build-track")
