@@ -11,7 +11,7 @@ MODE = {"run_track": run_track, "edit_track": edit_track, "create_track": create
 
 
 class Menu(object):
-    def __init__(self):
+    def __init__(self, run_mode=None, run_mode_args={}):
         self.selected_run_mode = None
         self.run_mode_args = {}
 
@@ -43,9 +43,6 @@ class Menu(object):
 
         load_track_menu.add.button("Return to Menu", pygame_menu.events.BACK)
 
-        def build_new_track():
-            print("Building new track")
-
         self.menu.add.button("Select Track", load_track_menu)
         self.menu.add.button(
             "Create New Track",
@@ -57,7 +54,12 @@ class Menu(object):
         )
         self.menu.add.button("Quit", pygame_menu.events.EXIT)
 
+        # Set the run mode if passed in
+        if run_mode and run_mode_args:
+            self.set_run_mode(run_mode, run_mode_args)
+
     def set_run_mode(self, run_mode, run_mode_args, close_menu=True):
+        print(run_mode, run_mode_args)
         self.selected_run_mode = MODE[run_mode]
         self.run_mode_args = run_mode_args
         if close_menu:
@@ -67,12 +69,12 @@ class Menu(object):
         print(json.dumps(run_mode_args))
 
 
-def start():
+def start(run_mode=None, run_mode_args={}):
     ### Initialize pygame ###
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
     clock = pygame.time.Clock()
-    game_menu = Menu()
+    game_menu = Menu(run_mode, run_mode_args)
 
     ### Start Game Loop ###
     run = True

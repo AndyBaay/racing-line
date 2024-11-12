@@ -1,5 +1,6 @@
 import math
 from functools import reduce
+from typing import List, Tuple, Union
 
 from scipy import interpolate
 from shapely.geometry import LinearRing, Point, Polygon
@@ -33,31 +34,31 @@ def det(a, b):
     return a[0] * b[1] - a[1] * b[0]
 
 
-def find_intersection(line1, line2):
-    """
-    Determine the intersection of two lines (if it exists)
-    :param line1: One end of our line
-    :param line2: Point we are checking
-    :return: (x_i, y_i): the intersection of the two lines, else None
-    """
-    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+# def find_intersection(line1, line2):
+#     """
+#     Determine the intersection of two lines (if it exists)
+#     :param line1: One end of our line
+#     :param line2: Point we are checking
+#     :return: (x_i, y_i): the intersection of the two lines, else None
+#     """
+#     xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+#     ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
 
-    div = det(xdiff, ydiff)
-    if div == 0:
-        return None
+#     div = det(xdiff, ydiff)
+#     if div == 0:
+#         return None
 
-    d = (det(*line1), det(*line2))
-    x_i = det(d, xdiff) / div
-    y_i = det(d, ydiff) / div
+#     d = (det(*line1), det(*line2))
+#     x_i = det(d, xdiff) / div
+#     y_i = det(d, ydiff) / div
 
-    # Test to make sure that the line we are using is on the wall segment
-    if is_between(line2[0], line2[1], (x_i, y_i)) and is_between(
-        line1[0], line1[1], (x_i, y_i)
-    ):
-        return x_i, y_i
+#     # Test to make sure that the line we are using is on the wall segment
+#     if is_between(line2[0], line2[1], (x_i, y_i)) and is_between(
+#         line1[0], line1[1], (x_i, y_i)
+#     ):
+#         return x_i, y_i
 
-    return None
+#     return None
 
 
 def point_distance(p1, p2):
@@ -127,3 +128,97 @@ def get_interpolated_line(x_points, y_points, to_interpolate):
     tck = interpolate.splrep(x_points, y_points)
 
     return [interpolate.splev(x, tck) for x in to_interpolate]
+
+
+#### Line Segment Intersection ####
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+
+def get_intersection_point(
+    line1: Tuple[float, float], line2: Tuple[float, float]
+) -> Union[None, Tuple[float, float]]:
+    """
+    Find the intersection point of two lines. If the lines are parallel, or if either is not a line
+    (i.e. the points are the same) then None is returned.
+
+    :param line1: A line segment defined by two points
+    :param line2: A line segment defined by two points
+    :return: A tuple of two floats representing the point of intersection, or None
+    """
+    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+
+    def det(a, b):
+        return a[0] * b[1] - a[1] * b[0]
+
+    div = det(xdiff, ydiff)
+    if div == 0:
+        return None
+
+    d = (det(*line1), det(*line2))
+    x = det(d, xdiff) / div
+    y = det(d, ydiff) / div
+    return x, y
+
+
+def on_segment(p, q, r):
+    """
+    Given three collinear points p, q, r, the function checks if
+    q lies on segment 'pr'
+    """
+    if (
+        (q.x <= max(p.x, r.x))
+        and (q.x >= min(p.x, r.x))
+        and (q.y <= max(p.y, r.y))
+        and (q.y >= min(p.y, r.y))
+    ):
+        return True
+    return False
+
+
+def orientation(p, q, r):
+    # to find the orientation of an ordered triplet (p,q,r)
+    # function returns the following values:
+    # 0 : Collinear points
+    # 1 : Clockwise points
+    # 2 : Counterclockwise
+
+    # See https://www.geeksforgeeks.org/orientation-3-ordered-points/amp/
+    # for details of below formula.
+
+    val = (float(q.y - p.y) * (r.x - q.x)) - (float(q.x - p.x) * (r.y - q.y))
+    if val > 0:
+        # Clockwise orientation
+        return 1
+    elif val < 0:
+        # Counterclockwise orientation
+        return 2
+    else:
+        # Collinear orientation
+        return 0
+
+
+def find_intersection(
+    line1: List[Tuple[float, float]], line2: List[Tuple[float, float]]
+):
+    # FIXME: Standardize on Points or some other class for coords
+    # p1, q1 = line1
+    # p2, q2 = line2
+    p1, q1, p2, q2 = [Point(*p) for p in [*line1, *line2]]
+    # Find the 4 orientations required for
+    # the general and special cases
+    o1 = orientation(p1, q1, p2)
+    o2 = orientation(p1, q1, q2)
+    o3 = orientation(p2, q2, p1)
+    o4 = orientation(p2, q2, q1)
+
+    # General case
+    if not ((o1 != o2) and (o3 != o4)):
+        # Lines segments do not intersect at all
+        return None
+
+    # Caclulate the intersection point
+    return get_intersection_point(line1, line2)

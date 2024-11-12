@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 pygame = "==2.6.0"
+shapely = "*"
+scipy = "*"
+pygame-menu = "*"
 
 [dev-packages]
 

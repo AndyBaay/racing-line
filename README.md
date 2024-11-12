@@ -22,6 +22,11 @@ Once you complete a boundry it will turn a different color to confirm it. Then y
 Once both lines are drawn click the save button. It will save the track definition to a an arbitrary json file and 
 provide the name in the console.
 
+## Show a processed track:
+```bash
+python main.py run-track ./conf/tracks/hairpins.json
+```
+
 ## Sources
 
 - https://dspace.mit.edu/bitstream/handle/1721.1/64669/706825301-MIT.pdf

@@ -5,18 +5,19 @@ import sys
 from datetime import datetime
 
 import pygame
+import pygame_menu
 
 from racingline.lib.line_generator import (
     calc_normal_line,
     distance_between,
     get_midpoint,
-    line_intersection,
     upsample_line,
 )
 
 from .graphics.button import Button
 from .graphics.cursor import Cursor
 from .lib.constants import GRID_SQUARE_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, Color
+from .lib.geometery import find_intersection
 
 LOGGER = logging.getLogger(__name__)
 
@@ -58,9 +59,12 @@ def run_track(screen, file):
             # Remember where we last found an intersection and start there for the next segment of inner track
             index = (index + last_outer_point_index) % (len(outer_track_limits) - 1)
 
-            if intersect := line_intersection(
+            if intersect := find_intersection(
                 normal_line, [outer_track_limits[index], outer_track_limits[index + 1]]
             ):
+                # if intersect := line_intersection(
+                #     normal_line, [outer_track_limits[index], outer_track_limits[index + 1]]
+                # ):
                 dist = distance_between(normal_line[0], intersect)
                 if dist < min_distance:
                     min_distance = dist
@@ -84,7 +88,7 @@ def run_track(screen, file):
 
         pygame.draw.polygon(screen, TRACK_COLOR, outer_track_limits)
         pygame.draw.polygon(screen, background_color, inner_track_limits)
-        pygame.draw.polygon(screen, Color.LIGHT_BLUE.value, centerline, 1)
+        pygame.draw.polygon(screen, Color.BLACK.value, centerline, 1)
         pygame.draw.line(screen, Color.WHITE.value, finish_line[0], finish_line[1], 3)
 
         for point in outer_track_limits + inner_track_limits:
@@ -117,73 +121,22 @@ def draw_grid(width, surface):
 
 
 def save_track(screen, lines):
-    # TODO: I think this was meant to be changed to a centerline definition where
-    # the boundaries are calculated as offsets from the centerline
     if len(lines) < 2:
         print("Error saving track. 2 lines are required (outer and inner boundaries)")
-        # if len(drawn_lines) < 1:
-        #     print('Error saving track - finished line is required to save.')
         return
     x, y = screen.get_size()
     track_definition = {
         "track_dimensions": [x, y],
         "track_background_color": list(Color.LIGHT_GREEN.value),
-        "center_line": lines[0],
+        "inner_track_limits": lines[0],
+        "outer_track_limits": lines[1],
+        "finish_line": [lines[0][0], lines[1][0]],
     }
     output_file_name = "track_" + str(random.randrange(0, 10000)).zfill(5) + ".json"
     out_file = open(output_file_name, "a")
     out_file.write(json.dumps(track_definition))
     out_file.close()
     print(f"Track saved to {output_file_name}")
-
-
-class SaveButton:
-    def __init__(
-        self,
-        pos,
-        width,
-        height,
-        text_color=Color.BLACK.value,
-        default_color=Color.WHITE.value,
-        hover_color=Color.LIGHT_GRAY.value,
-        pressed_color=Color.LIGHT_BLUE.value,
-    ):
-        # defining a font
-        smallfont = pygame.font.SysFont("Corbel", 35)
-        self.rect = pygame.Rect(pos[0], pos[1], width, height)
-        self.text = smallfont.render(" save", True, text_color)
-        self.state = ""  # hover, pressed, or empty string
-        self.last_click = datetime(1, 1, 1)
-        self.default_color = default_color
-        self.hover_color = hover_color
-        self.pressed_color = pressed_color
-
-    def check_for_click(self, mouse_pos, screen):
-        if self.rect.collidepoint(mouse_pos):
-            self.state = "pressed"
-            self.last_click = datetime.now()
-            save_track(screen)
-            return True
-        else:
-            return False
-
-    def update(self, mouse_pos):
-        if self.rect.collidepoint(mouse_pos):
-            self.state = "hover"
-        else:
-            self.state = ""
-
-    def draw(self, screen):
-        # Keep the highlighted color longer than the actual event for a button press
-        if (datetime.now() - self.last_click).total_seconds() < 0.2:
-            button_color = self.pressed_color
-        elif self.state == "hover":
-            button_color = self.hover_color
-        else:
-            button_color = self.default_color
-
-        pygame.draw.rect(screen, button_color, self.rect)
-        screen.blit(self.text, self.rect)
 
 
 def create_track(screen):
@@ -193,10 +146,12 @@ def create_track(screen):
     clock = pygame.time.Clock()
     cursor = Cursor()
     completed_lines = []
+    exit_to_menu_button = Button(
+        (120, 10), 120, 24, "exit to menu", on_click=pygame_menu.events.RESET
+    )
     save_button = Button(
         (40, 10), 70, 24, "save", on_click=lambda: save_track(screen, completed_lines)
     )
-    load_button = Button((40, 40), 70, 24, "load track")
     TRACK_COLOR = Color.DARK_GRAY.value
 
     run = True
@@ -228,7 +183,7 @@ def create_track(screen):
             print(new_line)
             completed_lines.append(new_line)
         save_button.update(mouse_pos)
-        load_button.update(mouse_pos)
+        exit_to_menu_button.update(mouse_pos)
 
         draw_grid(screen.get_width(), screen)
         # Draw current line
@@ -263,5 +218,5 @@ def create_track(screen):
 
         cursor.draw(screen)
         save_button.draw(screen)
-        load_button.draw(screen)
+        exit_to_menu_button.draw(screen)
         pygame.display.flip()
