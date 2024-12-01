@@ -1,0 +1,140 @@
+import argparse
+import json
+import logging
+import sys
+
+import pygame
+
+from racingline.editor import start_editor
+from racingline.lib.color import DARK_GRAY, LIGHT_BLUE, RED, WHITE
+from racingline.lib.line_generator import (
+    calc_normal_line,
+    get_midpoint,
+    line_intersection,
+    points_to_angle,
+    upsample_line,
+)
+from racingline.start import start
+
+LOGGER = logging.getLogger(__name__)
+
+LOGGER.warning("Started")
+### Load Track ###
+TRACK_FILE = "conf/tracks/basic_square.json"
+
+
+# def run_track():
+#     print("Running track")
+
+#     LOGGER.warning("Import finished")
+#     track_definition = {}
+#     with open(TRACK_FILE, "r") as f:
+#         track_definition = json.load(f)
+
+#     track_size = tuple(track_definition["track_dimensions"])
+#     background_color = tuple(track_definition["track_background_color"])
+#     finish_line = track_definition["finish_line"]
+#     outer_track_limits = track_definition["outer_track_limits"]
+#     inner_track_limits = track_definition["inner_track_limits"]
+#     TRACK_COLOR = DARK_GRAY
+#     points_to_angle(*inner_track_limits[:3])
+
+#     ### TESTING ###
+#     print(inner_track_limits)
+#     inner_track_limits = upsample_line(inner_track_limits)
+#     print(inner_track_limits)
+#     outer_track_limits = upsample_line(outer_track_limits)
+#     centerline = []
+#     last_outer_point_index = 0
+
+#     for index in range(0, len(inner_track_limits) - 1):
+#         second_index = (index + 1) % (len(inner_track_limits) - 1)
+#         # Create a normal line from the inner track
+#         normal_line = calc_normal_line(
+#             inner_track_limits[index], inner_track_limits[second_index]
+#         )
+#         # Find it's intersection with the outer track and trim
+#         for index in range(0, len(outer_track_limits) - 1):
+#             # Rememeber where we last found an intersection and start there for the next segement of inner track
+#             index = (index + last_outer_point_index) % (len(outer_track_limits) - 1)
+
+#             if intersect := line_intersection(
+#                 normal_line, [outer_track_limits[index], outer_track_limits[index + 1]]
+#             ):
+#                 last_outer_point_index = index
+#                 centerline.append(get_midpoint(normal_line[0], intersect))
+#                 break
+#     ### END TESTING ###
+
+#     ### Initialized Pygame ###
+#     pygame.init()
+#     # Create the window, saving it to a variable.
+#     screen = pygame.display.set_mode(track_size, pygame.RESIZABLE)
+#     pygame.display.set_caption("Max Verstappen - WDC")
+
+#     ### Main Loop ###
+#     while 1:
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 sys.exit()
+#         screen.fill(background_color)
+
+#         pygame.draw.polygon(screen, TRACK_COLOR, outer_track_limits)
+#         pygame.draw.polygon(screen, background_color, inner_track_limits)
+#         pygame.draw.polygon(screen, LIGHT_BLUE, centerline, 1)
+#         pygame.draw.line(screen, WHITE, finish_line[0], finish_line[1], 3)
+
+#         for point in outer_track_limits + inner_track_limits:
+#             pygame.draw.circle(screen, WHITE, point, 2)
+
+#         for index in range(0, len(inner_track_limits) - 1):
+#             second_index = (index + 1) % (len(inner_track_limits) - 1)
+#             normal_line = calc_normal_line(
+#                 inner_track_limits[index], inner_track_limits[second_index]
+#             )
+#             # pygame.draw.line(screen, RED, normal_line[0], normal_line[1], 1)
+
+#         pygame.display.flip()
+
+
+def build_track():
+    print("Building track")
+    start_editor()
+    pass
+
+
+def test_interpolation():
+    print("Testing interpolation")
+
+
+def main():
+    # Instantiate the parser
+    parser = argparse.ArgumentParser(description="Racing Line Calculation")
+    sub = parser.add_subparsers(dest="command", help="sub-command help")
+
+    # Build a track
+    start_parser = sub.add_parser("start")
+    start_parser.set_defaults(func=start)
+
+    # Build a track
+    # TODO: Add support through the start menu
+    edit_parser = sub.add_parser("build-track")
+    edit_parser.set_defaults(func=build_track)
+
+    # Evaluate a track
+    def start_run_track(arguments):
+        print(arguments)
+        print(arguments.file)
+        start(run_mode="run_track", run_mode_args={"file": arguments.file})
+
+    run_parser = sub.add_parser("run-track")
+    run_parser.add_argument("file", help="Relative path to the track file ")
+    run_parser.set_defaults(func=start_run_track)
+
+    args = parser.parse_args()
+    print(f"Args: {args}")
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

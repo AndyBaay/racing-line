@@ -1,0 +1,11 @@
+# Color Constants
+RED = (200,0,0)
+WHITE = (255, 255, 255)
+LIGHT_GREEN = (0, 204, 0) 
+DARK_GREEN = (0, 153, 0) 
+LIGHT_BLUE = (102, 178, 255)
+LIGHT_GRAY = (224, 224, 224)
+GRAY = (192, 192, 192)
+DARK_GRAY = (64, 64, 64)
+BLACK = (0, 0, 0)
+
